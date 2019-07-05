@@ -1,0 +1,43 @@
+#NEXUS 
+
+begin mrbayes;
+	set autoclose=yes nowarn=yes;
+	
+	execute data.nex;
+	taxset Fossils= f1 f2 f3 f4;
+	
+	[partitioning]
+	charset morpho = 1-100;
+	charset molec = 101-.;	
+	partition myPartitions = 2: morpho, molec;
+	set partition = myPartitions;
+	
+	[model of character evolution]
+	lset applyto=(1) rates=equal coding=variable;	
+	lset applyto=(2) nucmodel=4by4 nst=1 rates=equal;	
+	prset applyto=(2) statefreqpr=fixed(0.25,0.25,0.25,0.25); 
+	
+	unlink statefreq=(all);
+	prset applyto=(all) ratepr=variable;
+	
+	[clock model: first using a strict clock]
+	prset brlenspr=clock:uniform;
+	prset clockvarpr=strict;
+	
+	prset clockratepr = lognorm(-11.98293, 3.461638); 
+	prset treeagepr = unif(0,1000);
+
+	[calibrate fossil ages]
+	calibrate f1=fixed(85) f2=fixed(61.6666666666667) f3=fixed(38.3333333333333) f4=fixed(15);
+	prset nodeagepr = calibrated;
+		
+	[mcmc - run each run separately with serial MB version ]
+	mcmcp temp=0.1 nchain=2 samplefreq=1000 printfr=1000 nruns=2;
+	mcmc ngen=1000000 data=yes;
+	
+	sump burninfr=0.5;
+	sumt burninfr=0.5 conformat=Simple;
+	delete Fossils;	
+	sumt burninfr=0.5 Outputname=data.nex.withoutFossils conformat=Simple;
+
+end;
